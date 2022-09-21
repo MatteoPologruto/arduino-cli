@@ -157,9 +157,6 @@ jobs:
           tar -czvf "$PACKAGE_FILENAME" \
           -C "${{ env.PROJECT_NAME }}_osx_${{ matrix.artifact.name }}/" "${{ env.PROJECT_NAME }}" \
           -C ../../ LICENSE.txt
-          CHECKSUM_LINE="$(shasum -a 256 $PACKAGE_FILENAME)"
-          echo "PACKAGE_FILENAME=$PACKAGE_FILENAME" >> $GITHUB_ENV
-          echo "::set-output name=checksum-${{ matrix.artifact.name }}::$CHECKSUM_LINE"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -180,13 +177,13 @@ jobs:
           path: ${{ env.DIST_DIR }}
 
       - name: Update checksum
+        working-directory: ${{ env.DIST_DIR}}
         run: |
-          declare -a checksum_lines=("${{ needs.notarize-macos.outputs.checksum-darwin_amd64 }}" "${{ needs.notarize-macos.outputs.checksum-darwin_arm64 }}")
-          for checksum_line in "${checksum_lines[@]}"
+          TAG="nightly-$(date -u +"%Y%m%d")"
+          declare -a artifacts=$(ls | grep "^${{ env.PROJECT_NAME }}_${TAG}")
+          for artifact in "${artifacts[@]}"
           do
-            CHECKSUM=$(echo ${checksum_line} | cut -d " " -f 1)
-            PACKAGE_FILENAME=$(echo ${checksum_line} | cut -d " " -f 2)
-            perl -pi -w -e "s/.*${PACKAGE_FILENAME}/${CHECKSUM}  ${PACKAGE_FILENAME}/g;" ${{ env.DIST_DIR }}/*-checksums.txt
+            sha256sum $artifact >> ${TAG}-checksums.txt
           done
 
       - name: Upload release files on Arduino downloads servers

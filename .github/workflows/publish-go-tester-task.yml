@@ -135,6 +135,23 @@ jobs:
           name: ${{ env.BUILDS_ARTIFACT }}
           path: ${{ env.BUILDS_ARTIFACT }}
 
+      # Calculate checksums once
+      - name: Output checksum
+        if: matrix.artifact.name == 'checksums'
+        working-directory: ${{ env.BUILDS_ARTIFACT}}
+        run: |
+          PACKAGE_NAME_PREFIX="test"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            PACKAGE_NAME_PREFIX="$PACKAGE_NAME_PREFIX-${{ github.event.number }}"
+          fi
+          PACKAGE_NAME_PREFIX="$PACKAGE_NAME_PREFIX-${{ github.sha }}-"
+          TAG="${PACKAGE_NAME_PREFIX}git-snapshot"
+          declare -a artifacts=$(ls | grep "^arduino-cli_${TAG}")
+          for artifact in "${artifacts[@]}"
+          do
+            sha256sum $artifact >> ${TAG}-checksums.txt
+          done
+
       - name: Upload individual build artifact
         uses: actions/upload-artifact@v3
         with:
