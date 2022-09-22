@@ -186,6 +186,13 @@ jobs:
             sha256sum $artifact >> ${TAG}-checksums.txt
           done
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          if-no-files-found: error
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.DIST_DIR }}
+
       # - name: Upload release files on Arduino downloads servers
       #   uses: docker://plugins/s3
       #   env:
